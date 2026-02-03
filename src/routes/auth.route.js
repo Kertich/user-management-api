@@ -12,10 +12,13 @@ router.post('/register', async (req, res) => {
     // 1. Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Normalize email
+    const normalizedEmail = email.toLowerCase();
+
     // 2. Insert user
     const { data, error } = await supabase
         .from('users')
-        .insert([{ email, password: hashedPassword }])
+        .insert([{ email: normalizedEmail, password: hashedPassword }])
         .select();
 
     if (error) {
