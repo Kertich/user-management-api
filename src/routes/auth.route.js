@@ -3,30 +3,39 @@ const supabase = require('../config/supabase');
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const authMiddleware = require('../middleware/auth.middleware');
+const supabaseAdmin = require('../config/supabaseAdmin');
 
 const router = express.Router();
 
 router.post('/register', async (req, res) => {
+    
     const { email, password } = req.body;
 
-    // 1. Hash the password
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Normalize email
-    const normalizedEmail = email.toLowerCase();
-
-    // 2. Insert user
-    const { data, error } = await supabase
-        .from('users')
-        .insert([{ email: normalizedEmail, password: hashedPassword }])
-        .select();
+    // 1. Create auth user (anon key is fine)
+    const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+    });
 
     if (error) {
         return res.status(400).json({ error: error.message });
     }
 
-    res.status(201).json({ message: "User created", user: data[0]});
-});
+    //2. Now create profile in 'users' table using service role key(bypasses RLS)
+    const { error: profileError } = await supabaseAdmin
+        .from('users')
+        .insert({ id: data.user.id, //THIS must match auth.users.id 
+            email: data.user.email,
+         });
+         if (profileError) {
+        return res.status(400).json({ error: profileError.message });
+    }
+
+    res.status(201).json({ 
+        message: "User registered successfully", 
+        userId: data.user.id,
+    })
+     });
 
 router.post('/login', async (req, res) => {
     const { email, password } = req.body;
