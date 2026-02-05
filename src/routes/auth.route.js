@@ -40,32 +40,19 @@ router.post('/register', async (req, res) => {
 router.post('/login', async (req, res) => {
     const { email, password } = req.body;
 
-    // 1. Find user
-    const { data: users, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('email', email);
-
-    if (error || users.length === 0) {
-        return res.status(400).json({ error: "Invalid credentials" });
+       const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+    });
+    
+    if (error) {
+        return res.status(400).json({ error: error.message });
     }
-
-    const user = users[0];
-
-    // 2. Compare passwords
-    const isMatch = await bcrypt.compare(password, 
-        user.password);
-
-    if (!isMatch) {
-        return res.status(400).json({ error: "Invalid credentials" });
-    }
-
-    // 3. Create token
-    const token = jwt.sign({ user: user.id }, 
-        process.env.JWT_SECRET, { expiresIn: '1d' });
-
-    res.json({ message: "Login successful", token,
-        });
+    res.json({ 
+        message: "Login successful",
+        access_token: data.session.refresh_token, // Return refresh token for client to use
+        user: data.user,
+    });
 });
 
 router.get('/profile', authMiddleware, (req, res) => {
