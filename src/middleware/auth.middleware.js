@@ -1,22 +1,24 @@
-const jwt = require("jsonwebtoken");
+const supabase = require("../config/supabase");
 
-const authMiddleware = (req, res, next) => {
+const requireAuth = async (req, res, next) => {
     const authHeader = req.headers.authorization;
 
-    if (!authHeader) {
-        return res.status(401).json({ error: "No token provided" });
-    }
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }   
 
     const token = authHeader.split(' ')[1];
+    const { data, error } = await supabase.auth.getUser(token);
 
-    try {
-        const decoded = jwt.verify(token, 
-            process.env.JWT_SECRET);
-        req.user = decoded.user;
-        next();
-    } catch (err) {
-        return res.status(401).json({ error: "Invalid token" });
+    if (error || !data.user) {
+        return res.status(401).json({ error: 'Invalid or expired token' }); 
     }
-};
 
-module.exports = authMiddleware;
+    req.user = data.user;
+    next();
+    
+    
+
+    
+    };
+module.exports = requireAuth;

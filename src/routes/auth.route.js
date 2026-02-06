@@ -46,12 +46,15 @@ router.post('/login', async (req, res) => {
     });
     
     if (error) {
-        return res.status(400).json({ error: error.message });
+        return res.status(401).json({ error: error.message });
     }
     res.json({ 
         message: "Login successful",
-        access_token: data.session.refresh_token, // Return refresh token for client to use
-        user: data.user,
+        access_token: data.session.access_token, // Return refresh token for client to use
+        user: {
+            id: data.user.id,
+            email: data.user.email,
+        },
     });
 });
 
