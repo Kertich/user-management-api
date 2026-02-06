@@ -10,16 +10,13 @@ const supabase = require('../config/supabase');
 // Admin-only: Get all users
 router.get('/users', requireAuth, async (req, res) => {
    
-      console.log("REQ USER ID: ", req.user.id);
+     
     // check role from DB (trusted RLS applies)
     const { data: profile, error } = await supabase
         .from('users')
         .select('role')
         .eq('id', req.user.id)
         .single();  
-        
-console.log("PROFILE:", profile);
-console.log("ERROR:", error);
 
     if (error || profile.role !== 'admin') {
         return res.status(403).json({ error: 'Admin access required' });
